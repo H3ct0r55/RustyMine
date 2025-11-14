@@ -34,3 +34,14 @@ pub struct ServerInstance {
     pub j_max_memory_mb: u32,
     pub j_min_memory_mb: u32,
 }
+
+#[derive(Clone, Debug)]
+pub struct NewServerInstance {
+    pub name: String,
+    pub mc_version: McVersion,
+    pub port: u16,
+    pub rcon_enabled: bool,
+    pub rcon_port: Option<u16>,
+    pub j_max_memory_mb: u32,
+    pub j_min_memory_mb: u32,
+}

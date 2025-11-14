@@ -17,7 +17,7 @@ pub enum UserRole {
 
 #[derive(Debug, Clone)]
 pub struct User {
-    pub id: u32,
+    pub id: i64,
     pub username: String,
     pub password_hash: String,
     pub role: UserRole,
@@ -26,4 +26,12 @@ pub struct User {
     pub is_active: bool,
     pub email: Option<String>,
     pub last_login_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct NewUser {
+    pub username: String,
+    pub password_hash: String,
+    pub role: UserRole,
+    pub email: Option<String>,
 }

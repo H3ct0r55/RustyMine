@@ -3,7 +3,6 @@ use clap::{Parser, Subcommand};
 use tracing::info;
 
 use rustymine_backend::config::AppCfg;
-use rustymine_backend::domain::user;
 use rustymine_backend::logging;
 use rustymine_backend::{cli, interface};
 
