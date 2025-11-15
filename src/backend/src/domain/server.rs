@@ -1,4 +1,9 @@
+use std::fmt;
+use std::str::FromStr;
+
 use chrono::{DateTime, Utc};
+
+use crate::infrastructure::sqlite_server_repo::ServerRow;
 
 #[derive(Clone, Debug)]
 pub enum McVersion {
@@ -6,18 +11,26 @@ pub enum McVersion {
     V1_21_10,
 }
 
-//DB SCHEMA
-//id PRIMARY KEY INTEGER
-//name TEXT NOT NULL
-//mc_version TEXT NOT NULL
-//port INTEGER NOT NULL
-//rcon_enabled INTEGER NOT NULL
-//rcon_port INTEGER
-//created_at DATETIME NOT NULL
-//updated_at DATETIME NOT NULL
-//last_started_at DATETIME
-//j_max_memory_mb INTEGER NOT NULL
-//j_min_memory_mb INTEGER NOT NULL
+impl FromStr for McVersion {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "1.21.1" => Ok(McVersion::V1_21_1),
+            "1.12.10" => Ok(McVersion::V1_21_10),
+            _ => Err(format!("Unknown minecraft version: {:?}", s)),
+        }
+    }
+}
+
+impl fmt::Display for McVersion {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            McVersion::V1_21_1 => write!(f, "1.21.1"),
+            McVersion::V1_21_10 => write!(f, "1.21.10"),
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct ServerInstance {
@@ -44,4 +57,31 @@ pub struct NewServerInstance {
     pub rcon_port: Option<u16>,
     pub j_max_memory_mb: u32,
     pub j_min_memory_mb: u32,
+}
+
+impl From<ServerRow> for ServerInstance {
+    fn from(row: ServerRow) -> Self {
+        ServerInstance {
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+            mc_version: McVersion::from_str(&row.mc_version).unwrap(),
+            port: row.port as u16,
+            rcon_enabled: row.rcon_enabled != 0,
+            rcon_port: Some(row.rcon_port.unwrap() as u16),
+            created_at: DateTime::parse_from_rfc3339(&row.created_at)
+                .unwrap()
+                .with_timezone(&Utc),
+            updated_at: DateTime::parse_from_rfc3339(&row.updated_at)
+                .unwrap()
+                .with_timezone(&Utc),
+            last_started_at: Some(
+                DateTime::parse_from_rfc3339(&row.last_started_at.unwrap())
+                    .unwrap()
+                    .with_timezone(&Utc),
+            ),
+            j_max_memory_mb: row.j_max_memory_mb as u32,
+            j_min_memory_mb: row.j_min_memory_mb as u32,
+        }
+    }
 }

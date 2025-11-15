@@ -12,16 +12,16 @@ pub struct SqliteUserRepository {
 }
 
 #[derive(Debug, FromRow)]
-struct UserRow {
-    id: i64,
-    username: String,
-    password_hash: String,
-    role: String,
-    is_active: i64,
-    email: Option<String>,
-    created_at: String,
-    updated_at: String,
-    last_login_at: Option<String>,
+pub struct UserRow {
+    pub id: i64,
+    pub username: String,
+    pub password_hash: String,
+    pub role: String,
+    pub is_active: i64,
+    pub email: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub last_login_at: Option<String>,
 }
 
 impl SqliteUserRepository {
@@ -46,31 +46,7 @@ impl UserRepository for SqliteUserRepository {
             None => return Ok(None),
         };
 
-        let role = match row.role.as_str() {
-            "admin" => UserRole::Admin,
-            other => anyhow::bail!("unknown user role in DB: {}", other),
-        };
-
-        let created_at = DateTime::parse_from_rfc3339(&row.created_at)?.with_timezone(&Utc);
-        let updated_at = DateTime::parse_from_rfc3339(&row.updated_at)?.with_timezone(&Utc);
-
-        let last_login_at = if let Some(s) = row.last_login_at {
-            Some(DateTime::parse_from_rfc3339(&s)?.with_timezone(&Utc))
-        } else {
-            None
-        };
-
-        let user = User {
-            id: row.id,
-            username: row.username,
-            password_hash: row.password_hash,
-            role,
-            created_at,
-            updated_at,
-            is_active: row.is_active != 0,
-            email: row.email,
-            last_login_at,
-        };
+        let user: User = User::from(row);
 
         Ok(Some(user))
     }
@@ -85,31 +61,7 @@ impl UserRepository for SqliteUserRepository {
             None => return Ok(None),
         };
 
-        let role = match row.role.as_str() {
-            "admin" => UserRole::Admin,
-            other => anyhow::bail!("unknown user role in DB: {}", other),
-        };
-
-        let created_at = DateTime::parse_from_rfc3339(&row.created_at)?.with_timezone(&Utc);
-        let updated_at = DateTime::parse_from_rfc3339(&row.updated_at)?.with_timezone(&Utc);
-
-        let last_login_at = if let Some(s) = row.last_login_at {
-            Some(DateTime::parse_from_rfc3339(&s)?.with_timezone(&Utc))
-        } else {
-            None
-        };
-
-        let user = User {
-            id: row.id,
-            username: row.username,
-            password_hash: row.password_hash,
-            role,
-            created_at,
-            updated_at,
-            is_active: row.is_active != 0,
-            email: row.email,
-            last_login_at,
-        };
+        let user: User = User::from(row);
 
         Ok(Some(user))
     }
@@ -154,7 +106,19 @@ impl UserRepository for SqliteUserRepository {
         Ok(newuser)
     }
     async fn list_all(&self) -> Result<Vec<User>> {
-        Ok(vec![])
+        let users_rows = sqlx::query_as::<_, UserRow>(
+            r#"
+            SELECT *
+            FROM users
+            ORDER BY id
+        "#,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let users: Vec<User> = users_rows.into_iter().map(User::from).collect();
+
+        Ok(users)
     }
     async fn update(&self, user: User) -> Result<User> {
         Ok(user)
@@ -163,6 +127,14 @@ impl UserRepository for SqliteUserRepository {
         Ok(())
     }
     async fn delete(&self, id: i64) -> Result<()> {
+        let _ = sqlx::query(
+            r#"
+            DELETE FROM users WHERE id = ?
+        "#,
+        )
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
         Ok(())
     }
 }

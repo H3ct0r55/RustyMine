@@ -1,19 +1,22 @@
+use std::str::FromStr;
+
+use crate::infrastructure::sqlite_user_repo::UserRow;
 use chrono::{DateTime, Utc};
 #[derive(Clone, Debug)]
 pub enum UserRole {
     Admin,
 }
 
-//DB SCHEMA
-//id PRIMARY KEY INTEGER
-//username TEXT NOT NULL
-//password_hash TEXT NOT NULL
-//role TEXT NOT NULL
-//created_at DATETIME NOT NULL
-//updated_at DATETIME NOT NULL
-//is_active INTEGER NOT NULL
-//email TEXT
-//last_login_at DATETIME NOT NULL
+impl FromStr for UserRole {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "admin" => Ok(UserRole::Admin),
+            _ => Err(format!("Unknonw role: {}", s)),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct User {
@@ -34,4 +37,28 @@ pub struct NewUser {
     pub password_hash: String,
     pub role: UserRole,
     pub email: Option<String>,
+}
+
+impl From<UserRow> for User {
+    fn from(row: UserRow) -> Self {
+        User {
+            id: row.id,
+            username: row.username,
+            password_hash: row.password_hash,
+            role: UserRole::from_str(&row.role).unwrap(),
+            created_at: DateTime::parse_from_rfc3339(&row.created_at)
+                .unwrap()
+                .with_timezone(&Utc),
+            updated_at: DateTime::parse_from_rfc3339(&row.updated_at)
+                .unwrap()
+                .with_timezone(&Utc),
+            is_active: row.is_active != 0,
+            email: row.email,
+            last_login_at: Some(
+                DateTime::parse_from_rfc3339(&row.last_login_at.unwrap())
+                    .unwrap()
+                    .with_timezone(&Utc),
+            ),
+        }
+    }
 }
