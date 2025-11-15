@@ -17,21 +17,17 @@ use crate::{
 pub async fn run_daemon(config: &AppCfg) -> Result<()> {
     info!("Running RustyMine daemon with config: {:#?}", config);
     let db = Db::connect_and_migrate(config).await?;
-    let state = AppState::new(config.clone(), db);
-    let state = Arc::new(state);
-    info!("App state configued as: {:#?}", state);
+    let state = Arc::new(AppState::new(config.clone(), db));
     info!("Daemon is up! Ctrl + C to exit if you are not running systemd");
-
-    let user_repo = SqliteUserRepository::new(state.db.pool.clone());
 
     let new_user = NewUser {
         username: "h3cx2".to_string(),
         password_hash: "TEST HASH".to_string(),
         role: UserRole::Admin,
-        email: Some("hector@h3cx.dev".to_string()),
+        email: None,
     };
 
-    let created = user_repo.create(new_user).await;
+    let created = state.user_repo.create(new_user).await;
     match created {
         Ok(ref user) => {
             info!("Created user: {:#?}", user);
@@ -43,7 +39,7 @@ pub async fn run_daemon(config: &AppCfg) -> Result<()> {
 
     match created {
         Ok(ref user) => {
-            let fetched = user_repo.get_by_id(user.id).await?;
+            let fetched = state.user_repo.get_by_id(user.id).await?;
             info!("Fetched user by id: {:#?}", fetched);
         }
         Err(e) => {
@@ -51,7 +47,7 @@ pub async fn run_daemon(config: &AppCfg) -> Result<()> {
         }
     }
 
-    let all = user_repo.list_all().await?;
+    let all = state.user_repo.list_all().await?;
     info!("Listing all users: {:#?}", all);
 
     if let Err(e) = signal::ctrl_c().await {

@@ -1,3 +1,4 @@
+pub const BUILD_VERSION: &str = env!("BUILD_VERSION");
 use anyhow::{Ok, Result};
 use clap::{Parser, Subcommand};
 use tracing::info;
@@ -7,7 +8,6 @@ use rustymine_backend::logging;
 use rustymine_backend::{cli, interface};
 
 #[derive(Parser, Debug)]
-
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -26,10 +26,9 @@ async fn main() -> Result<()> {
     let args = Cli::parse();
     let config = AppCfg::load()?;
 
-    info!(
-        "Running RustyMine with args: {:?}, config: {:?}",
-        args, config
-    );
+    info!("Welcome to RustyMine");
+    info!("Version: {}", BUILD_VERSION);
+    info!("Run Mode: {:?}", args);
 
     match args.command {
         Commands::Daemon => interface::daemon::run_daemon(&config).await?,

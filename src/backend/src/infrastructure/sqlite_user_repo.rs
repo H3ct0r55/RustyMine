@@ -24,6 +24,38 @@ pub struct UserRow {
     pub last_login_at: Option<String>,
 }
 
+impl From<NewUser> for UserRow {
+    fn from(value: NewUser) -> Self {
+        UserRow {
+            id: -1,
+            username: value.username,
+            password_hash: value.password_hash,
+            role: value.role.to_string(),
+            is_active: 1,
+            email: value.email,
+            created_at: Utc::now().to_rfc3339(),
+            updated_at: Utc::now().to_rfc3339(),
+            last_login_at: None,
+        }
+    }
+}
+
+impl From<User> for UserRow {
+    fn from(value: User) -> Self {
+        UserRow {
+            id: value.id,
+            username: value.username,
+            password_hash: value.password_hash,
+            role: value.role.to_string(),
+            is_active: value.is_active as i64,
+            email: value.email,
+            created_at: value.created_at.to_rfc3339(),
+            updated_at: Utc::now().to_rfc3339(),
+            last_login_at: value.last_login_at.map(|dt| dt.to_rfc3339()),
+        }
+    }
+}
+
 impl SqliteUserRepository {
     pub fn new(pool: SqlitePool) -> Self {
         Self { pool }
@@ -66,13 +98,7 @@ impl UserRepository for SqliteUserRepository {
         Ok(Some(user))
     }
     async fn create(&self, user: NewUser) -> Result<User> {
-        let role_str = match user.role {
-            UserRole::Admin => "admin",
-        };
-
-        let now = Utc::now();
-        let created_at_str = now.to_rfc3339();
-        let updated_at_str = created_at_str.clone();
+        let insert: UserRow = UserRow::from(user);
 
         let result = sqlx::query(
             r#"
@@ -88,13 +114,13 @@ impl UserRepository for SqliteUserRepository {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL) 
         "#,
         )
-        .bind(&user.username)
-        .bind(&user.password_hash)
-        .bind(role_str)
-        .bind(1_i64)
-        .bind(&user.email)
-        .bind(&created_at_str)
-        .bind(&updated_at_str)
+        .bind(insert.username)
+        .bind(insert.password_hash)
+        .bind(insert.role)
+        .bind(insert.is_active)
+        .bind(insert.email)
+        .bind(insert.created_at)
+        .bind(insert.updated_at)
         .execute(&self.pool)
         .await?;
 

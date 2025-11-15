@@ -68,18 +68,17 @@ impl From<ServerRow> for ServerInstance {
             mc_version: McVersion::from_str(&row.mc_version).unwrap(),
             port: row.port as u16,
             rcon_enabled: row.rcon_enabled != 0,
-            rcon_port: Some(row.rcon_port.unwrap() as u16),
+            rcon_port: row.rcon_port.map(|p| p as u16),
             created_at: DateTime::parse_from_rfc3339(&row.created_at)
                 .unwrap()
                 .with_timezone(&Utc),
             updated_at: DateTime::parse_from_rfc3339(&row.updated_at)
                 .unwrap()
                 .with_timezone(&Utc),
-            last_started_at: Some(
-                DateTime::parse_from_rfc3339(&row.last_started_at.unwrap())
-                    .unwrap()
-                    .with_timezone(&Utc),
-            ),
+            last_started_at: row
+                .last_started_at
+                .as_deref()
+                .map(|s| DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)),
             j_max_memory_mb: row.j_max_memory_mb as u32,
             j_min_memory_mb: row.j_min_memory_mb as u32,
         }

@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use crate::infrastructure::sqlite_user_repo::UserRow;
 use chrono::{DateTime, Utc};
@@ -14,6 +14,14 @@ impl FromStr for UserRole {
         match s.to_lowercase().as_str() {
             "admin" => Ok(UserRole::Admin),
             _ => Err(format!("Unknonw role: {}", s)),
+        }
+    }
+}
+
+impl fmt::Display for UserRole {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UserRole::Admin => write!(f, "admin"),
         }
     }
 }
@@ -54,11 +62,10 @@ impl From<UserRow> for User {
                 .with_timezone(&Utc),
             is_active: row.is_active != 0,
             email: row.email,
-            last_login_at: Some(
-                DateTime::parse_from_rfc3339(&row.last_login_at.unwrap())
-                    .unwrap()
-                    .with_timezone(&Utc),
-            ),
+            last_login_at: row
+                .last_login_at
+                .as_deref()
+                .map(|s| DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)),
         }
     }
 }
