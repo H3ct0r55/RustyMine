@@ -1,13 +1,18 @@
-use std::fs::remove_file;
-
 use anyhow::{Error, Result};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use serde_json::json;
+use std::fs::remove_file;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
 use tokio::signal;
 use tokio::task::JoinSet;
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 
+use crate::interface::router::route_request;
+
+use crate::interface::protocol::{
+    DaemonError, DaemonMessage, DaemonRequest, DaemonResponse, ResponseStatus,
+};
 use crate::{config::AppCfg, infrastructure::db::Db, state::AppState};
 
 pub async fn run_daemon(config: &AppCfg) -> Result<()> {
@@ -69,30 +74,83 @@ pub async fn run_socket_server(state: AppState, shutdown: CancellationToken) -> 
 }
 
 async fn handle_client(
-    mut stream: UnixStream,
+    stream: UnixStream,
     state: AppState,
     shutdown: CancellationToken,
 ) -> Result<()> {
-    let mut buffer = [0u8; 1024];
+    let (reader, mut writer) = stream.into_split();
+    let mut reader = BufReader::new(reader);
+    let mut line = String::new();
 
+    // Read one line from client, or exit if shutdown
     let n = tokio::select! {
-        _ = shutdown.cancelled()=> {
+        _ = shutdown.cancelled() => {
             error!("Socket server: shutdown requested while waiting for data");
             return Ok(());
         }
-        res = stream.read(&mut buffer) => {
+        res = reader.read_line(&mut line) => {
             res?
         }
     };
 
     if n == 0 {
+        // Client closed connection
         return Ok(());
     }
 
-    let msg = String::from_utf8_lossy(&buffer[..n]).to_string();
+    let line = line.trim_end_matches(&['\n', '\r'][..]);
 
-    let response = format!("Echo from daemon: {msg}");
+    if line.is_empty() {
+        let resp = DaemonResponse::error(
+            None, // we never got a valid request
+            "EMPTY_REQUEST",
+            "Empty request payload",
+            None,
+        );
+        let json_resp = serde_json::to_string(&resp)?;
+        writer.write_all(json_resp.as_bytes()).await?;
+        writer.write_all(b"\n").await?;
+        return Ok(());
+    }
 
-    stream.write_all(response.as_bytes()).await?;
+    // Try to parse JSON into DaemonRequest
+    let req: DaemonRequest = match serde_json::from_str(line) {
+        Ok(r) => r,
+        Err(e) => {
+            error!("Failed to parse JSON from client: {e}; raw={line}");
+
+            let resp = DaemonResponse::error(
+                None, // still no valid request
+                "INVALID_JSON",
+                "Failed to parse JSON request",
+                Some(json!({ "error": e.to_string() })),
+            );
+            let json_resp = serde_json::to_string(&resp)?;
+            writer.write_all(json_resp.as_bytes()).await?;
+            writer.write_all(b"\n").await?;
+            return Ok(());
+        }
+    };
+
+    info!(command = %req.command, "Handling daemon request");
+
+    // Route valid request
+    let resp = match route_request(&state, &req).await {
+        Ok(r) => r,
+        Err(e) => {
+            error!("Internal error while handling request: {e}");
+            DaemonResponse::error(
+                Some(&req), // we *do* have a valid request here
+                "INTERNAL_ERROR",
+                "Internal server error",
+                Some(json!({ "error": e.to_string() })),
+            )
+        }
+    };
+
+    let json_resp = serde_json::to_string(&resp)?;
+    writer.write_all(json_resp.as_bytes()).await?;
+    writer.write_all(b"\n").await?;
+
     Ok(())
 }
