@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 
 use crate::utils::validation::{slugify, validate_name};
 
@@ -42,7 +43,7 @@ pub struct NewServer {
     pub mc_version: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, FromRow)]
 pub struct ServerRow {
     pub id: i64,
     pub name: String,

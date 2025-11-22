@@ -8,6 +8,7 @@ use axum::Router;
 use chrono::Utc;
 use rustymine::domain::server::Server;
 use rustymine::domain::supervisor::{ServerEvent, ServerState};
+use rustymine::infrastructure::config::AppCfg;
 use rustymine::infrastructure::state::AppState;
 use rustymine::interface::api::build_api_router;
 use rustymine::utils::validation::slugify;
@@ -18,15 +19,23 @@ use tokio::process::{Child, ChildStdout};
 use tokio::signal::{self, ctrl_c};
 use tokio::time::sleep;
 use tokio::{main, process::Command};
+use tracing::info;
+use tracing_subscriber::EnvFilter;
 #[tokio::main]
 async fn main() -> Result<()> {
-    let state = Arc::new(AppState::new());
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
+        .init();
+
+    info!("Starting RustyMine");
+    let config = AppCfg::new();
+    let state = Arc::new(AppState::new(&config).await);
 
     let app = build_api_router(state);
 
     let addr: SocketAddr = "0.0.0.0:8080".parse()?;
-    println!("API listening on http://{}", addr);
-
+    info!(%addr, "Listening");
     let listener = TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
 
