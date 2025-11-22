@@ -6,6 +6,7 @@ use tokio::{
     process::Command,
     sync::{broadcast::Sender, mpsc::Receiver},
 };
+use tracing::info;
 
 use crate::domain::{
     server::Server,
@@ -21,6 +22,8 @@ pub async fn run_server_worker(
 
     command
         .current_dir(&cfg.path)
+        .arg(format!("-Xmx{}", cfg.j_max_mem))
+        .arg(format!("-Xms{}", cfg.j_min_mem))
         .arg("-jar")
         .arg(&cfg.jar_path)
         .arg("nogui");

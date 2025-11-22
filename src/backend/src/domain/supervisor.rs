@@ -6,7 +6,11 @@ use tokio::{
     task::JoinHandle,
 };
 
-use crate::{domain::server::Server, infrastructure::supervisor::run_server_worker};
+use crate::{
+    domain::server::Server,
+    infrastructure::{state::AppState, supervisor::run_server_worker},
+    utils::validation::validate_server,
+};
 
 #[derive(Debug, Clone)]
 pub enum ServerState {
@@ -56,7 +60,8 @@ impl Supervisor {
         }
     }
 
-    pub async fn start_server(&self, server: Server) -> Result<()> {
+    pub async fn start_server(&self, state: Arc<AppState>, server: Server) -> Result<()> {
+        validate_server(state, &server).await?;
         let id = server.id;
         let (cmd_tx, cmd_rx) = mpsc::channel(32);
         let (events_tx, _) = broadcast::channel(256);

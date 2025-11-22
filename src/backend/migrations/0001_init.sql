@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS servers;
 
 CREATE TABLE IF NOT EXISTS servers (
   id                INTEGER PRIMARY KEY,
+  uuid              TEXT NOT NULL,
   name              TEXT NOT NULL,
   slug              TEXT NOT NULL UNIQUE,
   is_active         INTEGER NOT NULL,

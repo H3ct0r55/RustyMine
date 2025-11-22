@@ -36,6 +36,7 @@ impl ServerRepo for SqliteServerRepo {
             r#"
            SELECT
             id,
+            uuid,
             name, 
             slug,
             is_active,
@@ -66,6 +67,7 @@ impl ServerRepo for SqliteServerRepo {
         let result = sqlx::query(
             r#"
         INSERT INTO servers (
+            uuid,
             name, 
             slug,
             is_active,
@@ -77,9 +79,10 @@ impl ServerRepo for SqliteServerRepo {
             mc_version,
             created_at,
             updated_at
-        ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
         )
+        .bind(insert.uuid)
         .bind(insert.name)
         .bind(insert.slug)
         .bind(insert.is_active)

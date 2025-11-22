@@ -11,8 +11,8 @@ use serde_json::{Value, json};
 use tracing::{error, info, warn};
 
 use crate::{
-    domain::server::{NewServer, SafeServer},
-    infrastructure::state::AppState,
+    domain::server::{NewServer, SafeServer, ServerCreator},
+    infrastructure::{routines, state::AppState},
 };
 
 pub fn build_api_router(state: Arc<AppState>) -> Router {
@@ -27,6 +27,7 @@ fn api_v1_routes() -> Router<Arc<AppState>> {
         .route("/server/{id}", get(server_get_by_id))
         .route("/server/{id}/start", post(server_start))
         .route("/server/{id}/stop", post(server_stop))
+        .route("/server/create", post(server_create))
 }
 
 async fn server_add(
@@ -113,11 +114,14 @@ async fn server_start(
         }
     };
 
-    let result = state.supervisor.start_server(server).await;
+    let result = state.supervisor.start_server(state.clone(), server).await;
 
     match result {
         Ok(()) => Ok(Json(json!({"ok": true}))),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            error!("{}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }
 
@@ -133,5 +137,26 @@ async fn server_stop(
     match state.supervisor.stop_server(id).await {
         Ok(()) => Ok(Json(json!({"ok": true}))),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+async fn server_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<ServerCreator>,
+) -> Result<Json<Value>, StatusCode> {
+    let result = routines::create_new_server(state, input).await;
+    match result {
+        Ok(value) => {
+            let safe_server = SafeServer::from(value);
+
+            Ok(Json(json!({
+                "ok": true,
+                "server": safe_server
+            })))
+        }
+        Err(e) => {
+            error!("Failed to create new server with error: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
     }
 }
