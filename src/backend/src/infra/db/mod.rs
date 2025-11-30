@@ -1,3 +1,5 @@
+pub mod user;
+
 use std::time::Duration;
 
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -15,6 +17,6 @@ pub async fn connect(database_url: &str) -> Result<PgPool> {
 }
 
 pub async fn migrate(pool: &PgPool) -> Result<()> {
-    sqlx::migrate!().run(&pool).await?;
+    sqlx::migrate!().run(pool).await?;
     Ok(())
 }

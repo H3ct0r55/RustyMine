@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{Ok, Result};
-use rustymine_daemon::{router, state::AppState};
+use rustymine_daemon::{config::AppCfg, router, state::AppState};
 use tracing::{Level, debug, error, info, warn};
 
 pub const APP_NAME: &str = env!("CARGO_PKG_NAME");
@@ -38,7 +38,12 @@ async fn main() -> Result<()> {
 
     tracing::subscriber::set_global_default(subscriber)?;
 
-    let state = Arc::new(AppState::new());
+    let db_path: String = "postgres://rustymine:minecraft@localhost:5432/rustymine_dev".to_string();
+    let config = AppCfg {
+        db_path: db_path.clone(),
+    };
+
+    let state = Arc::new(AppState::new(&config).await);
 
     let app_result = router::init_router(state.clone()).await;
 
