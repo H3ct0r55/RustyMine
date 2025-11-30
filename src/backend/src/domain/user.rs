@@ -4,6 +4,7 @@ use axum::response::IntoResponse;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
 use crate::domain::validation;
@@ -29,6 +30,7 @@ pub struct NewUser {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct InternalNewUser {
+    uuid: Uuid,
     username: String,
     email: Option<String>,
     password_hash: String,
@@ -38,7 +40,7 @@ pub struct InternalNewUser {
 
 #[derive(Debug, Clone)]
 pub struct InternalUser {
-    id: i64,
+    uuid: Uuid,
     username: String,
     email: Option<String>,
     password_hash: String,
@@ -48,7 +50,7 @@ pub struct InternalUser {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct User {
-    id: i64,
+    uuid: Uuid,
     username: String,
     email: Option<String>,
     first_name: Option<String>,
@@ -65,7 +67,9 @@ impl TryFrom<NewUser> for InternalNewUser {
     fn try_from(value: NewUser) -> Result<Self, Self::Error> {
         let password_hash =
             auth::hash_password(&value.password).map_err(|e| UserConversionError::HashFailed(e))?;
+        let uuid = Uuid::new_v4();
         Ok(Self {
+            uuid: uuid,
             username: value.username,
             email: value.email,
             password_hash: password_hash,
@@ -78,7 +82,7 @@ impl TryFrom<NewUser> for InternalNewUser {
 impl From<InternalUser> for User {
     fn from(value: InternalUser) -> Self {
         Self {
-            id: value.id,
+            uuid: value.uuid,
             username: value.username,
             email: value.email,
             first_name: value.first_name,
