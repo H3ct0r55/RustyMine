@@ -1,4 +1,4 @@
-use serde::{Deserialize, de::value};
+use serde::Deserialize;
 use sqlx::prelude::FromRow;
 use uuid::Uuid;
 
