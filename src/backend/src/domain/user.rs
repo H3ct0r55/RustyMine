@@ -8,6 +8,7 @@ use sqlx::prelude::FromRow;
 use uuid::Uuid;
 use validator::Validate;
 
+use crate::domain::user_prems::{MemberUserPermissions, UserPermissions};
 use crate::domain::validation;
 
 use crate::auth;
@@ -27,6 +28,7 @@ pub struct NewUser {
     first_name: Option<String>,
     #[validate(length(min = 1, max = 64))]
     last_name: Option<String>,
+    permissions: Option<MemberUserPermissions>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -37,6 +39,7 @@ pub struct InternalNewUser {
     pub password_hash: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
+    pub permissions: Option<MemberUserPermissions>,
 }
 
 #[derive(Debug, Clone, Deserialize, FromRow)]
@@ -47,6 +50,8 @@ pub struct InternalUser {
     pub password_hash: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
+    #[sqlx(skip)]
+    pub permissions: Option<MemberUserPermissions>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
@@ -76,6 +81,7 @@ impl TryFrom<NewUser> for InternalNewUser {
             password_hash: password_hash,
             first_name: value.first_name,
             last_name: value.last_name,
+            permissions: value.permissions.clone(),
         })
     }
 }
@@ -97,5 +103,11 @@ impl Display for UserConversionError {
         match self {
             UserConversionError::HashFailed(e) => write!(f, "failed to hash password: {e}"),
         }
+    }
+}
+
+impl InternalUser {
+    pub fn attach_permissions(&mut self, permissions: UserPermissions) {
+        self.permissions = Some(MemberUserPermissions::from(permissions));
     }
 }

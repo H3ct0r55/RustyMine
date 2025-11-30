@@ -1,3 +1,4 @@
+pub mod perms;
 pub mod user;
 
 use std::time::Duration;

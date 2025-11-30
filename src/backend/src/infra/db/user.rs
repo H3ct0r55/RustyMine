@@ -2,7 +2,7 @@ use crate::{
     domain::user::{InternalNewUser, InternalUser, User},
     prelude::*,
 };
-use anyhow::{Ok, Result, anyhow};
+use anyhow::Result;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -29,7 +29,7 @@ pub async fn create(pool: &PgPool, new_user: InternalNewUser) -> Result<Internal
 pub async fn get_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<Option<InternalUser>> {
     let user = sqlx::query_as::<_, InternalUser>(
         r#"
-    SELECT uuid, username, email, password_hash, first_name, last_name FROM users WHERE uuid = $
+    SELECT uuid, username, email, password_hash, first_name, last_name FROM users WHERE uuid = $1
     "#,
     )
     .bind(uuid)
@@ -42,7 +42,7 @@ pub async fn get_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<Option<InternalUse
 pub async fn get_safe_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<Option<User>> {
     let user = sqlx::query_as::<_, User>(
         r#"
-    SELECT uuid, username, email, first_name, last_name FROM users WHERE uuid = $
+    SELECT uuid, username, email, first_name, last_name FROM users WHERE uuid = $1
     "#,
     )
     .bind(uuid)
@@ -78,4 +78,21 @@ pub async fn get_safe_all(pool: &PgPool) -> Result<Vec<User>> {
     .await?;
 
     Ok(users)
+}
+
+pub async fn exists_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<bool> {
+    let exists = sqlx::query_scalar::<_, bool>(
+        r#"
+        SELECT EXISTS(
+            SELECT 1
+            FROM users
+            WHERE uuid = $1
+        )
+        "#,
+    )
+    .bind(uuid)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(exists)
 }

@@ -31,6 +31,9 @@ pub async fn init_router(app_state: Arc<AppState>) -> Router {
                 .layer(ServiceBuilder::new().layer(middleware::cors()))
                 .with_state(app_state.clone()),
         )
+        .route("/api/users/{uuid}", get(user_routes::get_uuid))
+        .layer(ServiceBuilder::new().layer(middleware::cors()))
+        .with_state(app_state.clone())
 }
 
 async fn ping() -> Result<Json<Value>, StatusCode> {
