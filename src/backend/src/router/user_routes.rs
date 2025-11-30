@@ -23,7 +23,5 @@ pub async fn create(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    let user = User::from(internal);
-
-    Ok(Json(user))
+    todo!("Hook up return once db setup ready");
 }
