@@ -8,12 +8,15 @@ use axum::{
 };
 use serde_json::{Value, json};
 use std::sync::Arc;
-use tower::{Layer, ServiceBuilder};
+use tower::ServiceBuilder;
 
+use crate::prelude::*;
 use crate::state::AppState;
 
 pub async fn init_router(app_state: Arc<AppState>) -> Router {
-    Router::new()
+    info!("router initialization started");
+
+    let router = Router::new()
         .route(
             "/api/ping",
             get(ping).layer(
@@ -33,9 +36,13 @@ pub async fn init_router(app_state: Arc<AppState>) -> Router {
         )
         .route("/api/users/{uuid}", get(user_routes::get_uuid))
         .layer(ServiceBuilder::new().layer(middleware::cors()))
-        .with_state(app_state.clone())
+        .with_state(app_state.clone());
+
+    info!("router initialization completed");
+    router
 }
 
 async fn ping() -> Result<Json<Value>, StatusCode> {
+    debug!("ping request received");
     Ok(Json(json!({ "response": "pong"})))
 }

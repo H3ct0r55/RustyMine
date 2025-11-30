@@ -2,9 +2,10 @@ use anyhow::Result;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::domain::{user::User, user_prems::UserPermissions};
+use crate::{domain::user_prems::UserPermissions, prelude::*};
 
 pub async fn create(pool: &PgPool, new_perms: UserPermissions) -> Result<UserPermissions> {
+    debug!(user_uuid = %new_perms.uuid, "insert user permissions started");
     let perms = sqlx::query_as::<_, UserPermissions>(
         r#"
     INSERT INTO user_permissions (uuid, root, manage_users, login)
@@ -19,10 +20,12 @@ pub async fn create(pool: &PgPool, new_perms: UserPermissions) -> Result<UserPer
     .fetch_one(pool)
     .await?;
 
+    debug!(user_uuid = %perms.uuid, "insert user permissions completed");
     Ok(perms)
 }
 
 pub async fn get_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<Option<UserPermissions>> {
+    debug!(user_uuid = %uuid, "fetch user permissions by uuid started");
     let perms = sqlx::query_as::<_, UserPermissions>(
         r#"
     SELECT uuid, root, manage_users, login
@@ -34,10 +37,12 @@ pub async fn get_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<Option<UserPermiss
     .fetch_optional(pool)
     .await?;
 
+    debug!(user_uuid = %uuid, "fetch user permissions by uuid completed");
     Ok(perms)
 }
 
 pub async fn exists_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<bool> {
+    debug!(user_uuid = %uuid, "check user permissions existence started");
     let exists = sqlx::query_scalar::<_, bool>(
         r#"
     SELECT EXISTS(
@@ -51,5 +56,6 @@ pub async fn exists_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<bool> {
     .fetch_one(pool)
     .await?;
 
+    debug!(user_uuid = %uuid, "check user permissions existence completed");
     Ok(exists)
 }

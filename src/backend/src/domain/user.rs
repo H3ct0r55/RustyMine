@@ -1,8 +1,5 @@
 use std::fmt::Display;
 
-use axum::response::IntoResponse;
-use lazy_static::lazy_static;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use uuid::Uuid;

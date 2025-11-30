@@ -95,6 +95,7 @@ Agents should insert at least:
 - Improve error messages and error‑mapping logic.
 - Add missing context fields to logs.
 - Ensure compliance with this standard.
+- Preserve the startup `println!` banner and metadata in `src/backend/src/main.rs` for debug visibility.
 
 ### Agents **may not**:
 - Modify business logic, algorithms, backend behavior, or API responses (other than error messages).
