@@ -1,8 +1,11 @@
-use std::{process::exit, sync::Arc};
+use std::{collections::HashMap, process::exit, sync::Arc};
 
 use crate::{
     core,
-    domain::user::{InternalNewUser, NewUser},
+    domain::{
+        user::{InternalNewUser, NewUser},
+        user_prems::UserActions,
+    },
     prelude::*,
 };
 
@@ -12,10 +15,11 @@ use crate::{config::AppCfg, infra::db};
 
 pub struct AppState {
     pub db_pool: PgPool,
+    pub config: AppCfg,
 }
 
 impl AppState {
-    pub async fn new(config: &AppCfg) -> Self {
+    pub async fn new(config: AppCfg) -> Self {
         debug!("init app state");
         debug!("establish database connection");
         let db_pool = db::connect(&config.db_path)
@@ -36,7 +40,10 @@ impl AppState {
             .unwrap();
         info!("database ready after connect and migrate");
 
-        Self { db_pool: db_pool }
+        Self {
+            db_pool: db_pool,
+            config: config,
+        }
     }
 }
 

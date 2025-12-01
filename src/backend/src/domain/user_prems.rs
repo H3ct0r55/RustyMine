@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum UserActions {
     Root,
     ManageUsers,

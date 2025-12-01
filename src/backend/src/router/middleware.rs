@@ -1,8 +1,9 @@
-use crate::{core::user_routines, prelude::*};
+use crate::{core::user_routines, domain::user::InternalUser, prelude::*};
 use std::sync::Arc;
 
 use axum::{
-    extract::{Request, State},
+    Extension,
+    extract::{MatchedPath, Request, State},
     http::{self, Method, StatusCode, header::AUTHORIZATION},
     middleware::{Next, from_fn_with_state},
     response::Response,
@@ -66,6 +67,23 @@ pub async fn auth(
     req.extensions_mut().insert(current_user);
 
     // 6) Continue down the stack
+    Ok(next.run(req).await)
+}
+
+pub async fn perms(
+    State(state): State<Arc<AppState>>,
+    Extension(user): Extension<InternalUser>,
+    mut req: Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    let method: Method = req.method().clone();
+
+    let path = req
+        .extensions()
+        .get::<MatchedPath>()
+        .map(|p| p.as_str().to_string())
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
     Ok(next.run(req).await)
 }
 

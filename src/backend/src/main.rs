@@ -1,8 +1,10 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Ok, Result};
+use axum::http::Method;
 use rustymine_daemon::{
     config::AppCfg,
+    domain::user_prems::UserActions,
     router,
     state::{AppState, check_root},
 };
@@ -56,11 +58,15 @@ async fn main() -> Result<()> {
     );
 
     let db_path: String = "postgres://rustymine:minecraft@localhost:5432/rustymine_dev".to_string();
-    let config = AppCfg {
+    let mut config = AppCfg {
         db_path: db_path.clone(),
+        route_perms: HashMap::new(),
     };
 
-    let state = Arc::new(AppState::new(&config).await);
+    config.insert_route_perms(Method::GET, "/api/login", vec![UserActions::Login]);
+    config.insert_route_perms(Method::GET, "/api/users", vec![UserActions::Login]);
+
+    let state = Arc::new(AppState::new(config).await);
     check_root(state.clone()).await;
 
     let app_result = router::init_router(state.clone()).await;
