@@ -18,6 +18,11 @@ pub async fn auth(
     mut req: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
+    let request_method = req.method().clone();
+    let request_path = req.uri().path().to_string();
+
+    debug!(method = ?request_method, path = request_path, "authenticate request started");
+
     // 1) Extract Authorization header
     let auth_header = req
         .headers()
@@ -25,7 +30,7 @@ pub async fn auth(
         .ok_or(StatusCode::FORBIDDEN)?; // no header at all
 
     let auth_header = auth_header.to_str().map_err(|e| {
-        error!("Failed to parse Authorization header: {}", e);
+        error!(error = %e, method = ?request_method, path = request_path, "authorization header parse failed");
         StatusCode::FORBIDDEN
     })?;
 
@@ -35,6 +40,7 @@ pub async fn auth(
         (Some(scheme), Some(token)) if scheme.eq_ignore_ascii_case("bearer") => (scheme, token),
         _ => {
             // either wrong scheme or missing token
+            warn!(method = ?request_method, path = request_path, "authorization header missing bearer token");
             return Err(StatusCode::UNAUTHORIZED);
         }
     };
@@ -47,11 +53,14 @@ pub async fn auth(
     let current_user = match user_routines::get_by_username(state, username)
         .await
         .map_err(|e| {
-            error!("Error when fetching user via routine: {}", e);
+            error!(error = %e, method = ?request_method, path = request_path, username, "fetch user for auth failed");
             return StatusCode::INTERNAL_SERVER_ERROR;
         })? {
         Some(user) => user,
-        None => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+        None => {
+            error!(method = ?request_method, path = request_path, username, "authenticated user missing in database");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
     };
     // 5) Attach user to request extensions so handlers can grab it
     req.extensions_mut().insert(current_user);

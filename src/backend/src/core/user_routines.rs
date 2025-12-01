@@ -18,10 +18,12 @@ use crate::{
 };
 
 pub async fn login(state: Arc<AppState>, login_data: LoginData) -> Result<String, StatusCode> {
+    debug!(username = login_data.username.as_str(), "login started");
+
     let user = db::user::get_by_username(&state.db_pool, &login_data.username)
         .await
         .map_err(|e| {
-            error!("Failed fetching user during login: {}", e);
+            error!(error = %e, username = login_data.username.as_str(), "fetch user during login failed");
             return StatusCode::INTERNAL_SERVER_ERROR;
         })?;
     let user = match user {
@@ -30,7 +32,7 @@ pub async fn login(state: Arc<AppState>, login_data: LoginData) -> Result<String
     };
 
     let verify = verify_password(&login_data.password, &user.password_hash).map_err(|e| {
-        error!("Failed to verify password hash: {}", e);
+        error!(error = %e, username = login_data.username.as_str(), "verify password hash failed");
         return StatusCode::INTERNAL_SERVER_ERROR;
     })?;
 
@@ -39,7 +41,7 @@ pub async fn login(state: Arc<AppState>, login_data: LoginData) -> Result<String
     }
 
     let token = gen_jwt(user.username.clone()).map_err(|e| {
-        error!("Failed to generate JWT: {}", e);
+        error!(error = %e, username = login_data.username.as_str(), "generate jwt failed");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 

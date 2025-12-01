@@ -47,7 +47,7 @@ pub fn gen_jwt(username: String) -> Result<String, StatusCode> {
         &EncodingKey::from_secret(secret.as_ref()),
     )
     .map_err(|e| {
-        error!("Failed to create JWT: {}", e);
+        error!(error = %e, username = claim.username, "create jwt failed");
         return StatusCode::INTERNAL_SERVER_ERROR;
     })
 }
@@ -60,7 +60,7 @@ pub fn verify_jwt(token: String) -> Result<TokenData<AuthClaims>, StatusCode> {
         &Validation::default(),
     )
     .map_err(|e| {
-        error!("Failed to verify JWT: {}", e);
+        error!(error = %e, "verify jwt failed");
         return StatusCode::INTERNAL_SERVER_ERROR;
     });
     result
