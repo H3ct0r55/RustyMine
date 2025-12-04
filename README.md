@@ -49,6 +49,7 @@ In the scope of this project AI is currently only being used to standardize comm
 ---
 
 <div align="center">
-<a href="./LICENSE">PolyForm Noncommercial License</a> • H3cx  
+<a href="./LICENSE">PolyForm Noncommercial License</a> • H3cx
+  
 Built on coffee, late nights, and a fully up-to-date Arch install (btw).
 </div>
