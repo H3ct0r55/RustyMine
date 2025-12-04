@@ -2,6 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Ok, Result};
 use axum::http::Method;
+use mineguard::instance::InstanceHandle;
 use rustymine_daemon::{
     config::AppCfg,
     domain::user_prems::UserActions,

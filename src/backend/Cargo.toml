@@ -24,6 +24,7 @@ tracing = { version = "0.1.43", features = ["max_level_debug"] }
 tracing-subscriber = "0.3.22"
 uuid = { version = "1.18.1", features = ["v4", "serde"] }
 validator = { version = "0.20.0", features = ["derive"] }
+mineguard = {path = "../../../MineGuard/"}
 
 [build-dependencies]
 chrono = "0.4.42"
