@@ -30,14 +30,20 @@ impl AppCfg {
         &mut self,
         method: Method,
         path: impl Into<String>,
-        perms: UserPermissions,
+        root: bool,
+        perms: Vec<UserActions>,
     ) {
         let key = RouteKey {
             method,
             path: path.into(),
         };
 
-        self.route_perms.insert(key, perms);
+        let user_perms = UserPermissions {
+            root,
+            permissions: perms.into_iter().collect(), // Vec → HashSet
+        };
+
+        self.route_perms.insert(key, user_perms);
     }
 
     pub fn get_route_perms(&self, method: &Method, path: &str) -> Option<UserPermissions> {
@@ -46,13 +52,19 @@ impl AppCfg {
             path: path.to_string(),
         };
 
-        self.route_perms.get(&key)
+        let perm = match self.route_perms.get(&key) {
+            Some(val) => val.clone(),
+            None => return None,
+        };
+
+        Some(perm)
     }
 
     pub fn route_allows(&self, method: &Method, path: &str, user_perms: UserPermissions) -> bool {
-        let req_perms = self
-            .get_route_perms(method, path)
-            .ok_or_else(return false)?;
+        let req_perms = match self.get_route_perms(method, path) {
+            Some(val) => val,
+            None => return false,
+        };
 
         if req_perms.root == true {
             if user_perms.root == true {

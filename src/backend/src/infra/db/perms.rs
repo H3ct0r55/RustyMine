@@ -2,7 +2,10 @@ use anyhow::Result;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::user_prems::UserPermissions, prelude::*};
+use crate::{
+    domain::user_prems::{UserPermissions, UserPermissionsRow},
+    prelude::*,
+};
 
 pub async fn create(
     pool: &PgPool,
@@ -10,29 +13,29 @@ pub async fn create(
     new_perms: UserPermissions,
 ) -> Result<UserPermissions> {
     debug!(user_uuid = %uuid, "insert user permissions started");
-    let perms = sqlx::query_as::<_, UserPermissions>(
+    let insert = UserPermissionsRow::from(new_perms);
+    let perms = sqlx::query_as::<_, UserPermissionsRow>(
         r#"
-    INSERT INTO user_permissions (uuid, root, manage_users, login)
-    VALUES ($1, $2, $3, $4)
-    RETURNING uuid, root, manage_users, login
+    INSERT INTO user_permissions (uuid, root, permissions)
+    VALUES ($1, $2, $3)
+    RETURNING root, permissions
     "#,
     )
     .bind(uuid)
-    .bind(new_perms.root)
-    .bind(new_perms.manage_users)
-    .bind(new_perms.login)
+    .bind(insert.root)
+    .bind(insert.permissions)
     .fetch_one(pool)
     .await?;
 
     debug!(user_uuid = %uuid, "insert user permissions completed");
-    Ok(perms)
+    Ok(UserPermissions::from(perms))
 }
 
 pub async fn get_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<Option<UserPermissions>> {
     debug!(user_uuid = %uuid, "fetch user permissions by uuid started");
-    let perms = sqlx::query_as::<_, UserPermissions>(
+    let perms = sqlx::query_as::<_, UserPermissionsRow>(
         r#"
-    SELECT uuid, root, manage_users, login
+    SELECT uuid, root, permissions
     FROM user_permissions
     WHERE uuid = $1
     "#,
@@ -42,7 +45,10 @@ pub async fn get_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<Option<UserPermiss
     .await?;
 
     debug!(user_uuid = %uuid, "fetch user permissions by uuid completed");
-    Ok(perms)
+    match perms {
+        Some(val) => return Ok(Some(UserPermissions::from(val))),
+        None => return Ok(None),
+    }
 }
 
 pub async fn exists_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<bool> {
@@ -52,7 +58,7 @@ pub async fn exists_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<bool> {
     SELECT EXISTS(
         SELECT 1
         FROM user_permissions
-        WHERE uuis = $1
+        WHERE uuid = $1
     )
     "#,
     )

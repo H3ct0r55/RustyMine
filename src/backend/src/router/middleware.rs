@@ -77,7 +77,11 @@ pub async fn permissions(
     mut req: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    warn!("Calling into permissions with user {}", user);
+    let request_method = req.method().clone();
+    let request_path = req.uri().path().to_string();
+
+    debug!(method = ?request_method, path = request_path, "permissions request started");
+    debug!("Calling user {}", user.username.clone());
     let method: Method = req.method().clone();
 
     let path = req
@@ -86,5 +90,11 @@ pub async fn permissions(
         .map(|p| p.as_str().to_string())
         .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(next.run(req).await)
+    match state
+        .config
+        .route_allows(&method, path.as_str(), user.permissions.clone())
+    {
+        true => return Ok(next.run(req).await),
+        false => return Err(StatusCode::UNAUTHORIZED),
+    };
 }

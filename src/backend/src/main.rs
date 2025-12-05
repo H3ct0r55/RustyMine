@@ -64,8 +64,12 @@ async fn main() -> Result<()> {
         route_perms: HashMap::new(),
     };
 
-    config.insert_route_perms(Method::GET, "/api/login", vec![UserActions::Login]);
-    config.insert_route_perms(Method::GET, "/api/users", vec![UserActions::Login]);
+    config.insert_route_perms(
+        Method::GET,
+        "/api/users",
+        false,
+        vec![UserActions::ManageUsers],
+    );
 
     let state = Arc::new(AppState::new(config).await);
     check_root(state.clone()).await;

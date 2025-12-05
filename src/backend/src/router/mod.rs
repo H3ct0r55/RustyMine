@@ -24,11 +24,11 @@ macro_rules! middleware {
             axum::middleware::from_fn_with_state($state, crate::router::middleware::auth),
         )
     };
-    (cors_auth_perms: $state:expr) => {
+    (cors_auth_perms, $state:expr) => {
         (
             crate::router::middleware::cors(),
             axum::middleware::from_fn_with_state($state, crate::router::middleware::auth),
-            axum::middleware::from_fn_with_state($state, crate::router::middleware::perms),
+            axum::middleware::from_fn_with_state($state, crate::router::middleware::permissions),
         )
     };
 }
@@ -41,10 +41,10 @@ pub async fn init_router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/users",
             post(user_routes::create)
-                .layer(middleware!(cors_auth, app_state.clone()))
+                .layer(middleware!(cors_auth_perms, app_state.clone()))
                 .with_state(app_state.clone())
                 .get(user_routes::get_all)
-                .layer(middleware!(cors_auth, app_state.clone()))
+                .layer(middleware!(cors_auth_perms, app_state.clone()))
                 .with_state(app_state.clone()),
         )
         .route(
