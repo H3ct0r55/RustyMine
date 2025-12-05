@@ -58,6 +58,10 @@ pub async fn init_router(app_state: Arc<AppState>) -> Router {
             post(user_routes::login)
                 .layer(middleware!(cors))
                 .with_state(app_state.clone()),
+        )
+        .route(
+            "/api/logout",
+            post(user_routes::logout).layer(middleware!(cors)),
         );
 
     info!("router initialization completed");

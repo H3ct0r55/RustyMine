@@ -12,6 +12,10 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
+use axum_extra::extract::{
+    CookieJar,
+    cookie::{Cookie, SameSite},
+};
 use uuid::Uuid;
 
 pub async fn create(
@@ -43,8 +47,29 @@ pub async fn get_uuid(
 
 pub async fn login(
     State(state): State<Arc<AppState>>,
+    jar: CookieJar,
     Json(login_data): Json<LoginData>,
-) -> Result<Json<String>, StatusCode> {
-    let result = core::user_routines::login(state, login_data).await?;
-    Ok(Json(result))
+) -> Result<(CookieJar, Json<User>), StatusCode> {
+    let (jwt, user) = core::user_routines::login(state, login_data).await?;
+
+    let cookie = Cookie::build(("auth_token", jwt))
+        .http_only(true)
+        .secure(false)
+        .same_site(SameSite::None)
+        .path("/")
+        .build();
+
+    let jar = jar.add(cookie);
+
+    Ok((jar, Json(user)))
+}
+
+pub async fn logout(jar: CookieJar) -> Result<CookieJar, StatusCode> {
+    let cookie = Cookie::build(("auth_token", ""))
+        .path("/")
+        .http_only(true)
+        .build();
+    let jar = jar.remove(cookie);
+
+    Ok(jar)
 }

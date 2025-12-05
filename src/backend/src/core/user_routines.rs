@@ -17,7 +17,10 @@ use crate::{
     state::AppState,
 };
 
-pub async fn login(state: Arc<AppState>, login_data: LoginData) -> Result<String, StatusCode> {
+pub async fn login(
+    state: Arc<AppState>,
+    login_data: LoginData,
+) -> Result<(String, User), StatusCode> {
     debug!(username = login_data.username.as_str(), "login started");
 
     let user = db::user::get_by_username(&state.db_pool, &login_data.username)
@@ -45,7 +48,7 @@ pub async fn login(state: Arc<AppState>, login_data: LoginData) -> Result<String
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    Ok(token)
+    Ok((token, User::from(user)))
 }
 
 pub async fn create(state: Arc<AppState>, new_user: NewUser) -> Result<User, StatusCode> {
