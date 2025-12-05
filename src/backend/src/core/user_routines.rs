@@ -1,12 +1,12 @@
 use crate::{
     auth::{gen_jwt, verify_password},
-    domain::{api::LoginData, user::InternalUser, user_prems::UserPermissions},
+    domain::{api::LoginData, user::InternalUser},
     infra::db,
     prelude::*,
 };
 use std::sync::Arc;
 
-use axum::{extract::State, http::StatusCode};
+use axum::http::StatusCode;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -27,7 +27,7 @@ pub async fn login(
         .await
         .map_err(|e| {
             error!(error = %e, username = login_data.username.as_str(), "fetch user during login failed");
-            return StatusCode::INTERNAL_SERVER_ERROR;
+            StatusCode::INTERNAL_SERVER_ERROR
         })?;
     let user = match user {
         Some(value) => value,
@@ -36,7 +36,7 @@ pub async fn login(
 
     let verify = verify_password(&login_data.password, &user.password_hash).map_err(|e| {
         error!(error = %e, username = login_data.username.as_str(), "verify password hash failed");
-        return StatusCode::INTERNAL_SERVER_ERROR;
+        StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
     if !verify {
@@ -73,7 +73,7 @@ pub async fn create(state: Arc<AppState>, new_user: NewUser) -> Result<User, Sta
 
     let perms = db::perms::create(
         &state.db_pool,
-        created_user.uuid.clone(),
+        created_user.uuid,
         internal.permissions,
     )
     .await
@@ -151,11 +151,8 @@ pub async fn get_by_uuid(state: Arc<AppState>, uuid: Uuid) -> anyhow::Result<Opt
         .await
         .context("failed to fetch user permissions")?;
 
-    match perms {
-        Some(perms) => {
-            user.attach_permissions(perms);
-        }
-        None => {}
+    if let Some(perms) = perms {
+        user.attach_permissions(perms);
     }
 
     Ok(Some(user))
@@ -215,11 +212,8 @@ pub async fn get_by_username(
         .await
         .context("failed to fetch user permissions")?;
 
-    match perms {
-        Some(perms) => {
-            user.attach_permissions(perms);
-        }
-        None => {}
+    if let Some(perms) = perms {
+        user.attach_permissions(perms);
     }
 
     Ok(Some(user))

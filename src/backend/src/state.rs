@@ -1,11 +1,8 @@
-use std::{collections::HashMap, process::exit, sync::Arc};
+use std::{process::exit, sync::Arc};
 
 use crate::{
     core,
-    domain::{
-        user::{InternalNewUser, NewUser},
-        user_prems::UserActions,
-    },
+    domain::user::NewUser,
     prelude::*,
 };
 
@@ -41,8 +38,8 @@ impl AppState {
         info!("database ready after connect and migrate");
 
         Self {
-            db_pool: db_pool,
-            config: config,
+            db_pool,
+            config,
         }
     }
 }

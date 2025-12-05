@@ -46,8 +46,8 @@ pub async fn get_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<Option<UserPermiss
 
     debug!(user_uuid = %uuid, "fetch user permissions by uuid completed");
     match perms {
-        Some(val) => return Ok(Some(UserPermissions::from(val))),
-        None => return Ok(None),
+        Some(val) => Ok(Some(UserPermissions::from(val))),
+        None => Ok(None),
     }
 }
 

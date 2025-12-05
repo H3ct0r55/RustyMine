@@ -1,12 +1,11 @@
 use crate::prelude::*;
-use std::i64;
 
 use anyhow::Result;
 use argon2::{
     Argon2, PasswordHash, PasswordVerifier,
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
-use axum::{extract::State, http::StatusCode};
+use axum::http::StatusCode;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, TokenData, Validation, decode, encode};
 
@@ -26,8 +25,8 @@ pub fn verify_password(password: &str, password_hash: &str) -> Result<bool, pass
     let parsed_hash = PasswordHash::new(password_hash)?;
     let argon2 = Argon2::default();
     match argon2.verify_password(password.as_bytes(), &parsed_hash) {
-        Ok(_) => return Ok(true),
-        Err(password_hash::Error::Password) => return Ok(false),
+        Ok(_) => Ok(true),
+        Err(password_hash::Error::Password) => Ok(false),
         Err(e) => Err(e),
     }
 }
@@ -37,8 +36,8 @@ pub fn gen_jwt(username: String) -> Result<String, StatusCode> {
     let secret: String = "verysafestring".to_string();
     let now = Utc::now();
     let expire: chrono::TimeDelta = Duration::hours(24);
-    let exp = (now + expire).timestamp() as i64;
-    let iat = now.timestamp() as i64;
+    let exp = (now + expire).timestamp();
+    let iat = now.timestamp();
     let claim = AuthClaims { iat, exp, username };
 
     encode(
@@ -48,7 +47,7 @@ pub fn gen_jwt(username: String) -> Result<String, StatusCode> {
     )
     .map_err(|e| {
         error!(error = %e, username = claim.username, "create jwt failed");
-        return StatusCode::INTERNAL_SERVER_ERROR;
+        StatusCode::INTERNAL_SERVER_ERROR
     })
 }
 
@@ -61,7 +60,7 @@ pub fn verify_jwt(token: String) -> Result<TokenData<AuthClaims>, StatusCode> {
     )
     .map_err(|e| {
         error!(error = %e, "verify jwt failed");
-        return StatusCode::INTERNAL_SERVER_ERROR;
+        StatusCode::INTERNAL_SERVER_ERROR
     });
     result
 }

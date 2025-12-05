@@ -71,13 +71,13 @@ impl TryFrom<NewUser> for InternalNewUser {
     type Error = UserConversionError;
     fn try_from(value: NewUser) -> Result<Self, Self::Error> {
         let password_hash =
-            auth::hash_password(&value.password).map_err(|e| UserConversionError::HashFailed(e))?;
+            auth::hash_password(&value.password).map_err(UserConversionError::HashFailed)?;
         let uuid = Uuid::new_v4();
         Ok(Self {
-            uuid: uuid,
+            uuid,
             username: value.username,
             email: value.email,
-            password_hash: password_hash,
+            password_hash,
             first_name: value.first_name,
             last_name: value.last_name,
             permissions: value.permissions.clone(),
@@ -108,12 +108,12 @@ impl Display for UserConversionError {
 
 impl InternalUser {
     pub fn attach_permissions(&mut self, permissions: UserPermissions) {
-        self.permissions = UserPermissions::from(permissions);
+        self.permissions = permissions;
     }
 }
 impl User {
     pub fn attach_permissions(&mut self, permissions: UserPermissions) {
-        self.permissions = UserPermissions::from(permissions);
+        self.permissions = permissions;
     }
 }
 

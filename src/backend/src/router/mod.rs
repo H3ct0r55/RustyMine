@@ -4,12 +4,10 @@ pub mod user_routes;
 use axum::{
     Json, Router,
     http::StatusCode,
-    middleware::from_fn_with_state,
     routing::{get, post},
 };
 use serde_json::{Value, json};
 use std::sync::Arc;
-use tower::{Layer, ServiceBuilder};
 
 use crate::prelude::*;
 use crate::state::AppState;

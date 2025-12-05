@@ -5,7 +5,7 @@ use axum::{
     Extension,
     extract::{MatchedPath, Request, State},
     http::{self, Method, StatusCode, header::AUTHORIZATION},
-    middleware::{Next, from_fn_with_state},
+    middleware::Next,
     response::Response,
 };
 
@@ -13,7 +13,7 @@ use axum_extra::extract::CookieJar;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::debug;
 
-use crate::{auth::verify_jwt, infra::db, state::AppState};
+use crate::{auth::verify_jwt, state::AppState};
 
 pub async fn auth(
     State(state): State<Arc<AppState>>,
@@ -109,7 +109,7 @@ pub fn cors() -> CorsLayer {
 pub async fn permissions(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<InternalUser>,
-    mut req: Request,
+    req: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
     let request_method = req.method().clone();
@@ -117,7 +117,7 @@ pub async fn permissions(
 
     debug!(method = ?request_method, path = request_path, "permissions request started");
     debug!("Calling user {}", user.username.clone());
-    if user.permissions.root == true {
+    if user.permissions.root {
         return Ok(next.run(req).await);
     }
 
@@ -133,7 +133,7 @@ pub async fn permissions(
         .config
         .route_allows(&method, path.as_str(), user.permissions.clone())
     {
-        true => return Ok(next.run(req).await),
-        false => return Err(StatusCode::UNAUTHORIZED),
-    };
+        true => Ok(next.run(req).await),
+        false => Err(StatusCode::UNAUTHORIZED),
+    }
 }

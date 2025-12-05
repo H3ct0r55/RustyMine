@@ -1,10 +1,7 @@
 use axum::http::Method;
 use std::collections::HashMap;
 
-use crate::domain::{
-    user::User,
-    user_prems::{UserActions, UserPermissions},
-};
+use crate::domain::user_prems::{UserActions, UserPermissions};
 
 #[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub struct RouteKey {
@@ -66,12 +63,8 @@ impl AppCfg {
             None => return false,
         };
 
-        if req_perms.root == true {
-            if user_perms.root == true {
-                return true;
-            } else {
-                return false;
-            }
+        if req_perms.root {
+            return user_perms.root
         }
 
         req_perms

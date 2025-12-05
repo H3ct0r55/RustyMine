@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 use sqlx::{prelude::FromRow, types::Json};
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub enum UserActions {
@@ -10,6 +9,7 @@ pub enum UserActions {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Default)]
 pub struct UserPermissions {
     pub root: bool,
     pub permissions: HashSet<UserActions>,
@@ -39,14 +39,6 @@ impl From<UserPermissionsRow> for UserPermissions {
     }
 }
 
-impl Default for UserPermissions {
-    fn default() -> Self {
-        Self {
-            root: false,
-            permissions: HashSet::new(),
-        }
-    }
-}
 
 impl UserPermissions {
     pub fn root() -> Self {

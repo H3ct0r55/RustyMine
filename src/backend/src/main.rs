@@ -2,14 +2,13 @@ use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Ok, Result};
 use axum::http::Method;
-use mineguard::instance::InstanceHandle;
 use rustymine_daemon::{
     config::AppCfg,
     domain::user_prems::UserActions,
     router,
     state::{AppState, check_root},
 };
-use tracing::{Level, debug, info};
+use tracing::{Level, info};
 
 pub const APP_NAME: &str = env!("CARGO_PKG_NAME");
 pub const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
