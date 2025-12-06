@@ -63,16 +63,10 @@ impl AppCfg {
 
     pub async fn route_allows(
         &self,
-        req: &Request,
+        method: &Method,
+        path: &str,
         user_perms: UserPermissions,
     ) -> Result<bool, StatusCode> {
-        let method = req.method();
-
-        let path = req
-            .extensions()
-            .get::<MatchedPath>()
-            .map(|p| p.as_str())
-            .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
         let req_perms = match self.get_route_perms(method, path) {
             Some(val) => val,
             None => return Ok(false),

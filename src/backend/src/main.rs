@@ -63,12 +63,8 @@ async fn main() -> Result<()> {
         route_perms: HashMap::new(),
     };
 
-    config.insert_route_perms(
-        Method::GET,
-        "/api/users",
-        false,
-        vec![UserActions::ManageUsers],
-    );
+    config.insert_route_perms(Method::GET, "/api/users", false, vec![]);
+    config.insert_route_perms(Method::GET, "/api/users/{uuid}", false, vec![]);
     config.insert_route_perms(
         Method::POST,
         "/api/users",

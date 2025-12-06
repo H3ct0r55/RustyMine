@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use axum::{
     Extension,
-    extract::{Request, State},
+    extract::{MatchedPath, Request, State},
     http::{self, Method, StatusCode, header::AUTHORIZATION},
     middleware::Next,
     response::Response,
@@ -109,7 +109,7 @@ pub fn cors() -> CorsLayer {
 pub async fn permissions(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<InternalUser>,
-    mut req: Request,
+    req: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
     let request_method = req.method().clone();
@@ -117,13 +117,22 @@ pub async fn permissions(
 
     debug!(method = ?request_method, path = request_path, "permissions request started");
     debug!("Calling user {}", user.username.clone());
+
     if user.permissions.root {
         return Ok(next.run(req).await);
     }
 
+    let method = req.method();
+
+    let path = req
+        .extensions()
+        .get::<MatchedPath>()
+        .map(|p| p.as_str())
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
     match state
         .config
-        .route_allows(&req, user.permissions.clone())
+        .route_allows(method, path, user.permissions.clone())
         .await
     {
         Ok(true) => Ok(next.run(req).await),

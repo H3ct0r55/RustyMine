@@ -1,4 +1,7 @@
-use crate::{domain::api::LoginData, prelude::*};
+use crate::{
+    domain::{api::LoginData, user::InternalUser},
+    prelude::*,
+};
 use std::sync::Arc;
 
 use crate::{
@@ -8,7 +11,7 @@ use crate::{
 };
 use anyhow::Result;
 use axum::{
-    Json,
+    Extension, Json,
     extract::{Path, State},
     http::StatusCode,
 };
@@ -72,4 +75,10 @@ pub async fn logout(jar: CookieJar) -> Result<CookieJar, StatusCode> {
     let jar = jar.remove(cookie);
 
     Ok(jar)
+}
+
+pub async fn me(Extension(user): Extension<InternalUser>) -> Result<Json<User>, StatusCode> {
+    let clean = User::from(user);
+
+    Ok(Json(clean))
 }
