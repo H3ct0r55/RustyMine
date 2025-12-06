@@ -1,10 +1,6 @@
 use std::{process::exit, sync::Arc};
 
-use crate::{
-    core,
-    domain::user::NewUser,
-    prelude::*,
-};
+use crate::{core, domain::user::NewUser, prelude::*};
 
 use sqlx::PgPool;
 
@@ -37,10 +33,7 @@ impl AppState {
             .unwrap();
         info!("database ready after connect and migrate");
 
-        Self {
-            db_pool,
-            config,
-        }
+        Self { db_pool, config }
     }
 }
 

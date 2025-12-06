@@ -69,6 +69,12 @@ async fn main() -> Result<()> {
         false,
         vec![UserActions::ManageUsers],
     );
+    config.insert_route_perms(
+        Method::POST,
+        "/api/users",
+        false,
+        vec![UserActions::ManageUsers],
+    );
 
     let state = Arc::new(AppState::new(config).await);
     check_root(state.clone()).await;

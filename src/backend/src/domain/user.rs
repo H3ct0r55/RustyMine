@@ -5,7 +5,7 @@ use sqlx::prelude::FromRow;
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::domain::user_prems::UserPermissions;
+use crate::domain::user_prems::{ExtUserPermissions, UserPermissions};
 use crate::domain::validation;
 
 use crate::auth;

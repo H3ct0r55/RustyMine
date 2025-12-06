@@ -3,7 +3,9 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    domain::user_prems::{UserPermissions, UserPermissionsRow},
+    domain::user_prems::{
+        ExtUserPermissions, ExtUserPermissionsRow, UserPermissions, UserPermissionsRow,
+    },
     prelude::*,
 };
 
@@ -68,4 +70,24 @@ pub async fn exists_by_uuid(pool: &PgPool, uuid: Uuid) -> Result<bool> {
 
     debug!(user_uuid = %uuid, "check user permissions existence completed");
     Ok(exists)
+}
+
+pub async fn get_all(pool: &PgPool) -> Result<Vec<ExtUserPermissions>> {
+    debug!("fetch all internal users started");
+    let users = sqlx::query_as::<_, ExtUserPermissionsRow>(
+        r#"
+        SELECT uuid, root, permissions
+        FROM user_permissions
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let clean = users
+        .iter()
+        .map(|v| ExtUserPermissions::from(v.clone()))
+        .collect();
+
+    debug!("fetch all internal users completed");
+    Ok(clean)
 }

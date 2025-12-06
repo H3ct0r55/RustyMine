@@ -121,14 +121,6 @@ pub async fn permissions(
         return Ok(next.run(req).await);
     }
 
-    let method: Method = req.method().clone();
-
-    let path = req
-        .extensions()
-        .get::<MatchedPath>()
-        .map(|p| p.as_str().to_string())
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-
     match state
         .config
         .route_allows(&method, path.as_str(), user.permissions.clone())

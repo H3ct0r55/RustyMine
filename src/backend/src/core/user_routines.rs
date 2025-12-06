@@ -1,6 +1,10 @@
 use crate::{
     auth::{gen_jwt, verify_password},
-    domain::{api::LoginData, user::InternalUser},
+    domain::{
+        api::LoginData,
+        user::InternalUser,
+        user_prems::{ExtUserPermissions, UserPermissions},
+    },
     infra::db,
     prelude::*,
 };
@@ -71,16 +75,12 @@ pub async fn create(state: Arc<AppState>, new_user: NewUser) -> Result<User, Sta
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    let perms = db::perms::create(
-        &state.db_pool,
-        created_user.uuid,
-        internal.permissions,
-    )
-    .await
-    .map_err(|e| {
-        error!(error = %e, "create user permissions entry failed");
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    let perms = db::perms::create(&state.db_pool, created_user.uuid, internal.permissions)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "create user permissions entry failed");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     created_user.attach_permissions(perms);
 
@@ -92,10 +92,23 @@ pub async fn create(state: Arc<AppState>, new_user: NewUser) -> Result<User, Sta
 
 pub async fn get_all(state: Arc<AppState>) -> Result<Vec<User>, StatusCode> {
     debug!("fetch all users started");
-    let users = db::user::get_safe_all(&state.db_pool).await.map_err(|e| {
+    let mut users = db::user::get_safe_all(&state.db_pool).await.map_err(|e| {
         error!(error = %e, "fetch all users failed");
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
+
+    let perms = db::perms::get_all(&state.db_pool).await.map_err(|e| {
+        error!(error = %e, "fetch all permissions failed");
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    users.iter_mut().for_each(|u| {
+        let u_perms = match perms.iter().find(|p| p.uuid == u.uuid) {
+            Some(val) => UserPermissions::from(val.clone()),
+            None => UserPermissions::new(),
+        };
+        u.attach_permissions(u_perms);
+    });
 
     Ok(users)
 }

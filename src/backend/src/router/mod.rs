@@ -48,7 +48,7 @@ pub async fn init_router(app_state: Arc<AppState>) -> Router {
         .route(
             "/api/users/{uuid}",
             get(user_routes::get_uuid)
-                .layer(middleware!(cors_auth, app_state.clone()))
+                .layer(middleware!(cors_auth_perms, app_state.clone()))
                 .with_state(app_state.clone()),
         )
         .route(
@@ -59,7 +59,9 @@ pub async fn init_router(app_state: Arc<AppState>) -> Router {
         )
         .route(
             "/api/logout",
-            post(user_routes::logout).layer(middleware!(cors)),
+            post(user_routes::logout)
+                .layer(middleware!(cors_auth, app_state.clone()))
+                .with_state(app_state.clone()),
         );
 
     info!("router initialization completed");
