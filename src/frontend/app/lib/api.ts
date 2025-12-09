@@ -1,4 +1,4 @@
-const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "")
+const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "")
 
 const apiUrl = (path: string) => `${apiBase}${path}`
 
